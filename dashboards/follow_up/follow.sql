@@ -1,5 +1,5 @@
 
-DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-11-17';
+DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-11-24';
 
 CREATE OR REPLACE TABLE `peya-delivery-and-support.automated_tables_reports.cusops_ovperformance`
 PARTITION BY created_date
@@ -30,7 +30,7 @@ NULL AS csat_response_ssf,
 NULL AS csat_positive_response_ac,
 NULL AS csat_positive_response_ssf,
 NULL AS csat_triggered_ssf,
-
+NULL AS Retyp,
 FROM `peya-bi-tools-pro.il_core.fact_orders` o
 WHERE registered_date BETWEEN from_date -1 AND to_date+1 AND DATE(o.registered_at_utc) BETWEEN from_date AND to_date
 GROUP BY 1,2,3,4,5,6,7,8
@@ -59,7 +59,7 @@ NULL AS csat_response_ssf,
 NULL AS csat_positive_response_ac,
 NULL AS csat_positive_response_ssf,
 SUM(csat_trigger) AS csat_triggered_ssf,
-
+NULL AS Retyp,
 FROM  `peya-delivery-and-support.automated_tables_reports.cusOps_session_level`  s
 WHERE created_date BETWEEN from_date AND to_date
 GROUP BY 1,2,3,4,5,6,7,8,9
@@ -88,6 +88,7 @@ count(distinct case when csat < 6 AND survey_type = 'Self Service' THEN response
 COUNT(distinct case when csat > 3 AND survey_type = 'After Contact' THEN response_id ELSE NULL END) AS csat_positive_response_ac,
 COUNT(distinct case when csat > 3 AND survey_type = 'Self Service' THEN response_id ELSE NULL END) AS csat_positive_response_ssf,
 NULL AS csat_triggered_ssf,
+NULL AS Retyp
 FROM `peya-data-origins-pro.cl_gcc_service.tweety_csat_responses` c
 LEFT JOIN `peya-delivery-and-support.automated_tables_reports.global_contact_reasons` AS GC ON global_ccr_code = global_cr_code AND contact_category = 'Customer'
 LEFT JOIN  `peya-delivery-and-support.automated_tables_reports.cusOps_session_level` ss ON ss.session_id = c.session_id AND ss.created_date BETWEEN from_date -1 AND to_date+1
@@ -118,6 +119,7 @@ NULL AS csat_response_ssf,
 NULL AS csat_positive_response_ac,
 NULL AS csat_positive_response_ssf,
 NULL AS csat_triggered_ssf,
+SUM(Retyp) as Retyp
 
 
 FROM `peya-delivery-and-support.automated_tables_reports.cus_ops_contacts_perf` c
