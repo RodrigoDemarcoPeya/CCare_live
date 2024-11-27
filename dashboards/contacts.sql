@@ -1,5 +1,5 @@
 
-DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-11-21';
+DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-11-24';
 
 create or replace table `peya-delivery-and-support.automated_tables_reports.cus_ops_contacts_perf` 
 partition by created_date as 
@@ -47,10 +47,41 @@ CASE
     AND accionador_level2 = 'CUSTOMER SERVICE' THEN TRUE
     ELSE false
   END AS rejected_in_this_chat,
+  CASE WHEN n.CCR3_HC != c.contact_reason_l3 THEN 1 ELSE 0 END AS Retyp,
+  page_id,
+  n.session_id
 
 FROM `fulfillment-dwh-production.curated_data_shared.all_contacts` c
-LEFT JOIN `peya-delivery-and-support.automated_tables_reports.ops_contacts` s ON s.contact_id = c.contact_id AND s.service = 'Customer' AND created_date_Mvd BETWEEN from_date-1 AND to_date+1 
-LEFT JOIN `peya-datamarts-pro.dm_fulfillment.fail_rate_order_level` f ON SAFE_CAST(f.order_id AS INT) = s.order_id AND f.registered_date BETWEEN from_date AND to_date
+
+
+LEFT JOIN (SELECT
+s.contact_id,
+lob,
+s.queue_time,
+is_sla30_fa_ind,
+avg_r_time,
+is_fcr_ind,
+is_transf_chat_ind,
+ga_ind,
+sat_comment,
+payment_method,
+ROW_NUMBER() OVER (PARTITION BY s.contact_id ORDER BY s.created_at_Mvd DESC) AS row_num
+
+FROM `peya-delivery-and-support.automated_tables_reports.ops_contacts` s
+WHERE created_date_Mvd BETWEEN from_date-1 AND to_date+1  AND s.service = 'Customer' 
+) s ON s.contact_id = c.contact_id  AND s.row_num = 1
+
+LEFT JOIN (SELECT
+order_id,
+rejected_at,
+accionador_level2,
+
+ROW_NUMBER() OVER (PARTITION BY f.order_id ORDER BY f.registered_date DESC) AS row_num
+FROM `peya-datamarts-pro.dm_fulfillment.fail_rate_order_level`f
+WHERE  f.registered_date BETWEEN from_date AND to_date
+)f ON f.order_id = c.order_id AND f.row_num = 1
+
+
 LEFT JOIN (SELECT
   order_id,
   business_type.business_type_name AS vertical,
@@ -60,13 +91,25 @@ LEFT JOIN (SELECT
   WHERE registered_date BETWEEN from_date-1 AND to_date+1 
   )o ON CAST(o.order_id AS STRING) = c.order_id
 
+LEFT JOIN ( SELECT
+  e.contact_id,
+  contact_reason_l3 AS CCR3_HC,
+  page_id,
+  session_id
+FROM `peya-data-origins-pro.cl_gcc_service.hc_navigation_steps`n
+  LEFT JOIN UNNEST(contacts_created) e
+  LEFT JOIN `peya-delivery-and-support.automated_tables_reports.global_contact_reasons` AS GC ON contact_reason_level_3 = global_cr_code AND contact_category = 'Customer'
+  WHERE n.created_date BETWEEN from_date-1 AND to_date+1 AND n.stakeholder = 'Customer'
+)n ON n.contact_id = c.contact_id
+
 WHERE c.stakeholder = 'Customer' AND c.created_date between from_date and to_date AND contact_resolution_skill != 'courier-business' 
 )
+
+
 
 SELECT
 s.*,
 
 FROM contacts s
 WHERE s.created_date BETWEEN from_date AND to_date
-
 
