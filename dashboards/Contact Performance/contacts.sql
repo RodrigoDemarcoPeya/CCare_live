@@ -1,5 +1,5 @@
 
-DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-11-24';
+DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-12-06';
 
 create or replace table `peya-delivery-and-support.automated_tables_reports.cus_ops_contacts_perf` 
 partition by created_date as 
@@ -22,7 +22,9 @@ first_reply_time_secs AS FRT,
 s.queue_time,
 is_sla30_fa_ind,
 avg_r_time,
-is_fcr_ind,
+case when frc.ticket_id IS NOT NULL THEN 1 ELSE 0 END AS frc_base,
+frc.is_fcr  AS is_fcr,
+frc.recontact,
 is_transf_chat_ind,
 ga_ind,
 sat_comment,
@@ -101,6 +103,15 @@ FROM `peya-data-origins-pro.cl_gcc_service.hc_navigation_steps`n
   LEFT JOIN `peya-delivery-and-support.automated_tables_reports.global_contact_reasons` AS GC ON contact_reason_level_3 = global_cr_code AND contact_category = 'Customer'
   WHERE n.created_date BETWEEN from_date-1 AND to_date+1 AND n.stakeholder = 'Customer'
 )n ON n.contact_id = c.contact_id
+
+LEFT JOIN (
+  SELECT
+ticket_id, 
+is_fcr, 
+CASE WHEN ranking_recontact > 0 THEN 1 ELSE 0 END AS recontact
+ FROM `peya-datamarts-pro.dm_care.first_contact_resolution` f
+ WHERE  partition_date BETWEEN from_date-1 AND to_date+1
+)frc ON frc.ticket_id = c.contact_id
 
 WHERE c.stakeholder = 'Customer' AND c.created_date between from_date and to_date AND contact_resolution_skill != 'courier-business' 
 )
