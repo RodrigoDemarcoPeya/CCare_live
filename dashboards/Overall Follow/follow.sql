@@ -1,5 +1,5 @@
 
-DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-12-06';
+DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-12-13';
 
 CREATE OR REPLACE TABLE `peya-delivery-and-support.automated_tables_reports.cusops_ovperformance`
 PARTITION BY created_date
@@ -14,12 +14,12 @@ o.country.country_code AS country_name,
 business_type.business_type_name AS vertical,
 delivery_type,
 "Order related" AS order_related,
-"Without CCR1" AS CCR1,
-"Without CCR2" AS CCR2,
-"Without CCR3" AS CCR3,
-"Without CCR1_TW" AS CCR1_tweety,
-"Without CCR2_TW" AS CCR2_tweety,
-"Without CCR3_TW" AS CCR3_tweety,
+"NULL" AS CCR1,
+"NULL" AS CCR2,
+"NULL" AS CCR3,
+--"Without CCR1_TW" AS CCR1_tweety,
+--"Without CCR2_TW" AS CCR2_tweety,
+--"Without CCR3_TW" AS CCR3_tweety,
 COUNT(order_id) AS orders,
 NULL AS sessions,
 NULL AS contacts,
@@ -30,7 +30,7 @@ NULL AS csat_response_ssf,
 NULL AS csat_positive_response_ac,
 NULL AS csat_positive_response_ssf,
 NULL AS csat_triggered_ssf,
-NULL AS Retyp,
+--NULL AS Retyp,
 NULL AS Fcr_contacts,
 NULL AS Fcr,
 NULL AS Recontact
@@ -49,9 +49,6 @@ CASE WHEN order_id IS NOT NULL THEN "Order related" else 'Non order related' END
 CCR1, 
 CCR2,
 CCR3,
-"Without CCR1_TW" AS CCR1_tweety,
-"Without CCR2_TW" AS CCR2_tweety,
-"Without CCR3_TW" AS CCR3_tweety,
 NULL AS orders,
 COUNT(DISTINCT session_id) AS sessions,
 NULL AS contacts,
@@ -62,7 +59,6 @@ NULL AS csat_response_ssf,
 NULL AS csat_positive_response_ac,
 NULL AS csat_positive_response_ssf,
 SUM(csat_trigger) AS csat_triggered_ssf,
-NULL AS Retyp,
 NULL AS Fcr_contacts,
 NULL AS Fcr,
 NULL AS Recontact
@@ -78,12 +74,9 @@ RIGHT(global_entity_id,2) AS country_name,
 vertical AS vertical, 
 delivery_type AS delivery_type,
 CASE WHEN ss.order_id IS NOT NULL THEN "Order related" else 'Non order related' END AS order_related,  
-ss.CCR1  AS CCR1,
-ss.CCR2 AS CCR2,
-ss.CCR3  AS CCR3,
-gc.contact_reason_l1 AS CCR1_tweety,
-gc.contact_reason_l2 AS CCR2_tweety,
-gc.contact_reason_l3 AS CCR3_tweety,
+CASE WHEN gc.contact_reason_l1 IS NULL THEN 'NULL' ELSE gc.contact_reason_l1 END AS CCR1,
+CASE WHEN gc.contact_reason_l2 IS NULL THEN 'NULL' ELSE gc.contact_reason_l2 END AS CCR2,
+CASE WHEN gc.contact_reason_l3 IS NULL THEN 'NULL' ELSE gc.contact_reason_l3 END  AS CCR3,
 NULL AS orders,
 NULL AS sessions,
 NULL AS contacts,
@@ -94,7 +87,6 @@ count(distinct case when csat < 6 AND survey_type = 'Self Service' THEN response
 COUNT(distinct case when csat > 3 AND survey_type = 'After Contact' THEN response_id ELSE NULL END) AS csat_positive_response_ac,
 COUNT(distinct case when csat > 3 AND survey_type = 'Self Service' THEN response_id ELSE NULL END) AS csat_positive_response_ssf,
 NULL AS csat_triggered_ssf,
-NULL AS Retyp,
 NULL AS Fcr_contacts,
 NULL AS Fcr,
 NULL AS Recontact
@@ -115,9 +107,6 @@ CASE WHEN c.order_id IS NOT NULL THEN "Order related" else 'Non order related' E
 CCR1,
 CCR2,
 CCR3,
-"Without CCR1_TW" AS CCR1_tweety,
-"Without CCR2_TW" AS CCR2_tweety,
-"Without CCR3_TW" AS CCR3_tweety,
 NULL AS orders,
 NULL AS sessions,
 COUNT(DISTINCT contact_id) as contacts,
@@ -128,21 +117,13 @@ NULL AS csat_response_ssf,
 NULL AS csat_positive_response_ac,
 NULL AS csat_positive_response_ssf,
 NULL AS csat_triggered_ssf,
-SUM(Retyp) as Retyp,
 SUM(frc_base) AS Fcr_contacts,
 SUM(is_fcr) AS Fcr,
 SUM(recontact) as Recontact
-
 FROM `peya-delivery-and-support.automated_tables_reports.cus_ops_contacts_perf` c
-
 WHERE c.created_date BETWEEN from_date AND to_date
-GROUP BY 1,2,3,4,5,6,7,8,9,10,11
+GROUP BY 1,2,3,4,5,6,7,8,9,10
 )
-
-
-
-
-
 
 SELECT * FROM 
 (SELECT * FROM sessions

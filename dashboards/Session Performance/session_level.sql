@@ -1,5 +1,5 @@
 
-DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-11-21';
+DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-12-13';
 CREATE OR REPLACE TABLE `peya-delivery-and-support.automated_tables_reports.cusOps_session_level`  
 PARTITION BY created_date
 
@@ -11,9 +11,9 @@ FROM (
   s.session_id,
   DATE(	s.created_at) AS created_date,
   RIGHT(s.global_entity_id, 2) AS country_name, 
-  CASE WHEN gc.contact_reason_l1 IS NULL THEN 'Without CCR1' ELSE gc.contact_reason_l1 END as CCR1,
-  CASE WHEN gc.contact_reason_l2 IS NULL THEN 'Without CCR2' ELSE gc.contact_reason_l2 END as CCR2,
-  CASE WHEN gc.contact_reason_l3 IS NULL THEN 'Without CCR3' ELSE gc.contact_reason_l3 END as CCR3,
+  CASE WHEN gc.contact_reason_l1 IS NULL THEN 'NULL' ELSE gc.contact_reason_l1 END as CCR1,
+  CASE WHEN gc.contact_reason_l2 IS NULL THEN 'NULL' ELSE gc.contact_reason_l2 END as CCR2,
+  CASE WHEN gc.contact_reason_l3 IS NULL THEN 'NULL' ELSE gc.contact_reason_l3 END as CCR3,
   s.device_type,
   s.first_order_status,
   s.last_order_status,

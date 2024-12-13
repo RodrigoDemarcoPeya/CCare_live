@@ -1,5 +1,4 @@
-
-DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-12-06';
+DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-12-13';
 
 create or replace table `peya-delivery-and-support.automated_tables_reports.cus_ops_contacts_perf` 
 partition by created_date as 
@@ -13,9 +12,9 @@ RIGHT(global_entity_id,2) AS country_name,
 creation_timestamp AS created_at_utc,
 resolution_timestamp AS resolution_at_utc,
 c.case_origin,
-CASE WHEN c.contact_reason_l1 = 'Contact without CR' THEN 'Without CCR1'ELSE c.contact_reason_l1 END AS CCR1,
-CASE WHEN c.contact_reason_l2 = 'Contact without CR' THEN 'Without CCR2'ELSE c.contact_reason_l2 END AS CCR2,
-CASE WHEN c.contact_reason_l3 = 'Contact without CR' THEN 'Without CCR3'ELSE c.contact_reason_l3 END AS CCR3,
+CASE WHEN c.contact_reason_l1 = 'Contact without CR' THEN 'NULL'ELSE c.contact_reason_l1 END AS CCR1,
+CASE WHEN c.contact_reason_l2 = 'Contact without CR' THEN 'NULL'ELSE c.contact_reason_l2 END AS CCR2,
+CASE WHEN c.contact_reason_l3 = 'Contact without CR' THEN 'NULL'ELSE c.contact_reason_l3 END AS CCR3,
 c.local_contact_reason AS CCR4,
 handling_time_secs AS AHT,
 first_reply_time_secs AS FRT,
@@ -49,11 +48,11 @@ CASE
     AND accionador_level2 = 'CUSTOMER SERVICE' THEN TRUE
     ELSE false
   END AS rejected_in_this_chat,
-  CASE WHEN n.CCR3_HC != c.contact_reason_l3 THEN 1 ELSE 0 END AS Retyp,
-  page_id,
-  n.session_id
+  --CASE WHEN n.CCR3_HC != c.contact_reason_l3 THEN 1 ELSE 0 END AS Retyp,
+  --page_id,
+  --n.session_id
 
-FROM `fulfillment-dwh-production.curated_data_shared.all_contacts` c
+FROM `peya-data-origins-pro.cl_gcc_service.all_contacts` c
 
 
 LEFT JOIN (SELECT
@@ -92,7 +91,8 @@ LEFT JOIN (SELECT
   FROM `peya-bi-tools-pro.il_core.fact_orders` 
   WHERE registered_date BETWEEN from_date-1 AND to_date+1 
   )o ON CAST(o.order_id AS STRING) = c.order_id
-
+ 
+/* Hay que fixearlo
 LEFT JOIN ( SELECT
   e.contact_id,
   contact_reason_l3 AS CCR3_HC,
@@ -103,7 +103,7 @@ FROM `peya-data-origins-pro.cl_gcc_service.hc_navigation_steps`n
   LEFT JOIN `peya-delivery-and-support.automated_tables_reports.global_contact_reasons` AS GC ON contact_reason_level_3 = global_cr_code AND contact_category = 'Customer'
   WHERE n.created_date BETWEEN from_date-1 AND to_date+1 AND n.stakeholder = 'Customer'
 )n ON n.contact_id = c.contact_id
-
+*/
 LEFT JOIN (
   SELECT
 ticket_id, 
@@ -113,7 +113,7 @@ CASE WHEN ranking_recontact > 0 THEN 1 ELSE 0 END AS recontact
  WHERE  partition_date BETWEEN from_date-1 AND to_date+1
 )frc ON frc.ticket_id = c.contact_id
 
-WHERE c.stakeholder = 'Customer' AND c.created_date between from_date and to_date AND contact_resolution_skill != 'courier-business' 
+WHERE c.stakeholder = 'Customer' AND c.created_date between from_date and to_date AND c.contact_resolution_skill != 'courier-business' 
 )
 
 
@@ -123,4 +123,3 @@ s.*,
 
 FROM contacts s
 WHERE s.created_date BETWEEN from_date AND to_date
-
