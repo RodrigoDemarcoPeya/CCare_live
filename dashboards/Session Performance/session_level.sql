@@ -1,5 +1,5 @@
 
-DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-12-13';
+DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2025-01-27';
 CREATE OR REPLACE TABLE `peya-delivery-and-support.automated_tables_reports.cusOps_session_level`  
 PARTITION BY created_date
 
@@ -30,17 +30,22 @@ FROM (
   o.order_id as oorder,
   o.vertical,
   o.delivery_type,
-  o.order_status
+  o.order_status,
+  isDmart,
   FROM  `peya-data-origins-pro.cl_gcc_service.hc_sessions`s
   LEFT JOIN `peya-delivery-and-support.automated_tables_reports.global_contact_reasons` AS GC ON s.last_leaf_ccr = global_cr_code AND contact_category = 'Customer'
   LEFT JOIN `peya-bi-tools-pro.il_hcc.fact_helpcenter_sessions_level` se ON se.session_id = s.session_id AND se.created_date BETWEEN from_date and to_date
   LEFT JOIN (SELECT
-  order_id,
-  business_type.business_type_name AS vertical,
-  delivery_type,
-  order_status
-  FROM `peya-bi-tools-pro.il_core.fact_orders` 
-  WHERE registered_date BETWEEN from_date-1 AND to_date+1 
+  o.order_id,
+  o.business_type.business_type_name AS vertical,
+  o.delivery_type,
+  o.order_status,
+  CASE WHEN p.is_darkstore = true THEN "Yes"
+  ELSE "No"
+  END AS isDmart  
+  FROM `peya-bi-tools-pro.il_core.fact_orders`  o
+  LEFT JOIN `peya-bi-tools-pro.il_core.dim_partner` AS p ON p.partner_id = o.restaurant.id
+  WHERE o.registered_date BETWEEN from_date-1 AND to_date+1 
   )o ON CAST(o.order_id AS STRING) = s.order_id
   WHERE s.created_date BETWEEN from_date-1 AND to_date+1 AND s.stakeholder = 'Customer'
 )WHERE created_date between from_date and to_date

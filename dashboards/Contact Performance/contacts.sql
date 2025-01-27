@@ -1,4 +1,4 @@
-DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-12-13';
+DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2025-01-27';
 
 create or replace table `peya-delivery-and-support.automated_tables_reports.cus_ops_contacts_perf` 
 partition by created_date as 
@@ -34,6 +34,7 @@ c.is_preorder,
 o.vertical,
 c.order_id,
 stakeholder_entry_point,
+isDmart,
 CASE
     WHEN datetime_diff(
         DATETIME(f.rejected_at),
@@ -84,12 +85,17 @@ WHERE  f.registered_date BETWEEN from_date AND to_date
 
 
 LEFT JOIN (SELECT
-  order_id,
-  business_type.business_type_name AS vertical,
-  delivery_type,
-  order_status
-  FROM `peya-bi-tools-pro.il_core.fact_orders` 
-  WHERE registered_date BETWEEN from_date-1 AND to_date+1 
+  o.order_id,
+  o.business_type.business_type_name AS vertical,
+  o.delivery_type,
+  o.order_status,
+  CASE WHEN o.order_id IS NULL THEN 'No Order Related'
+  WHEN p.is_darkstore = true THEN "Yes"
+  ELSE "No"
+  END AS isDmart 
+  FROM `peya-bi-tools-pro.il_core.fact_orders`  o
+      LEFT JOIN `peya-bi-tools-pro.il_core.dim_partner` AS p ON p.partner_id = o.restaurant.id --new 
+  WHERE o.registered_date BETWEEN from_date-1 AND to_date+1 
   )o ON CAST(o.order_id AS STRING) = c.order_id
  
 /* Hay que fixearlo
