@@ -2,5 +2,4 @@
 
 # 🚀 Customer Care Live Tableros
 
-
-Breve descripción del proyecto y su propósito.
+Proyecto con las querys principales de Customer Care Live.
