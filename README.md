@@ -1,4 +1,4 @@
-![Vista previa]([https://imgur.com/a/c5vVDoi](https://imgur.com/HJptSW5))
+![Vista previa](https://postimg.cc/gxH0ZV9K)
 
 # 🚀 Customer Care Live Tableros
 
