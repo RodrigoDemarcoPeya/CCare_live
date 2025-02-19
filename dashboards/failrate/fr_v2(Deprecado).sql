@@ -1,5 +1,8 @@
-DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-10-27';
+/*
+19/2/25: DEPRECADO
 
+*/
+DECLARE from_date DATE DEFAULT '2024-07-01'; DECLARE to_date DATE DEFAULT '2024-10-27';
 
 CREATE OR REPLACE TABLE `peya-delivery-and-support.automated_tables_reports.cus_ops_fail_rate_v2`
 PARTITION BY order_date
